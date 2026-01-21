@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="VisualDraft.API/VisualDraft.API.csproj" />
+  <Project Path="VisualDraft.Data/VisualDraft.Data.csproj" />
+  <Project Path="VisualDraft.Domain/VisualDraft.Domain.csproj" />
+</Solution>

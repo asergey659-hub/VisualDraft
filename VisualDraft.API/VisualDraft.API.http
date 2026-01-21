@@ -1,0 +1,6 @@
+@VisualDraft.API_HostAddress = http://localhost:5048
+
+GET {{VisualDraft.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
