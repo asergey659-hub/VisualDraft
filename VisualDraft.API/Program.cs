@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using VisualDraft.Api.Endpoints;
 using VisualDraft.Data;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(connectionString));
+    options.UseSqlite(connectionString, b => b.MigrationsAssembly("VisualDraft.Data")));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -17,15 +18,26 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "VisualDraft API", Version = "v1" });
 });
 
+// === ИСПРАВЛЕНИЕ 1: JSON (Лечим ошибку 500) ===
+builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
+{
+    // Игнорируем циклы (Project -> Pins -> Project)
+    options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+});
+
+// === ИСПРАВЛЕНИЕ 2: CORS (Лечим ошибку подключения) ===
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:5173") // Точный адрес фронтенда (без слеша в конце!)
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials(); // Разрешаем куки/авторизацию для SignalR
     });
 });
+
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -46,5 +58,8 @@ app.MapProjectEndpoints();
 
 app.MapGet("/ping", () => Results.Ok("Pong!"))
    .WithName("HealthCheck");
+
+// Подключаем маршрут для веб-сокетов
+app.MapHub<VisualDraft.Api.Hubs.DesignHub>("/hubs/design");
 
 app.Run();
