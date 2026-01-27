@@ -6,6 +6,10 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 // --- 1. Services ---
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
@@ -17,15 +21,11 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "VisualDraft API", Version = "v1" });
 });
-
-// === ИСПРАВЛЕНИЕ 1: JSON (Лечим ошибку 500) ===
 builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
 {
-    // Игнорируем циклы (Project -> Pins -> Project)
     options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
 
-// === ИСПРАВЛЕНИЕ 2: CORS (Лечим ошибку подключения) ===
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -53,13 +53,11 @@ app.UseHttpsRedirection();
 
 // --- 3. Endpoints ---
 
-// Одна строка вместо кучи кода!
 app.MapProjectEndpoints();
 
 app.MapGet("/ping", () => Results.Ok("Pong!"))
    .WithName("HealthCheck");
 
-// Подключаем маршрут для веб-сокетов
 app.MapHub<VisualDraft.Api.Hubs.DesignHub>("/hubs/design");
 
 app.Run();
